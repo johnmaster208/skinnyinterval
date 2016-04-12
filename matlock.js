@@ -1,22 +1,30 @@
 /*
-* matlock.js
-* description: polling mechanism for content gating
+* agent.js
+* description: customs polling script which builds profile info for unknown visitors.
 * author: John Richardson
 *
 */
 
-var matLock = {
+var matlock = {
+
 	url: window.location.href, // url: stores the content URL
 	timerStatus: 0,			   // timerStatus: on/off switch for the timer (1 == On, 0 == Off)
 	currentTime: 0,		   	   // currentTime: holds the current time on the timer in seconds
 	userStatus: null,   	   // userStatus holds 'unsecured' or 'secured' based upon the security check
-	runtime: null,			   // todo: add variable to keep runtime clock on multiple users
-	callback: null,			   // todo: add callback url to execute from Drupal configuration
-	logging: 0,				   // verbose logging in console; Defaults to 0, Set to 1 if you want to see output
+	runtime: null,			   // runtime is unique value for setInterval variable. Used to clear timeouts and nothing else.
+	totalTime: null,
+    event: {},			   	   // event array Allows for building of custom event automated actions.
+	logging: 0,                // verbose logging in console; Defaults to 0, Set to 1 if you want to see output
+	timeline: '',			   // based on what's in the event obj, a dynamic casing statement that includes timing/execution of scripts on the page load.
+	hashid: null,
+
 	startTimer: function(){
 		this.timerStatus = 1;
 		if(this.logging == 1) {
 		console.log("The timer was started at " + this.currentTime + " seconds.");
+		}
+		if(this.runtime !== null) {
+		clearTimeout(this.runtime);
 		}
 		this.incrementTimer();
 		//return this.timerStatus;
@@ -50,6 +58,17 @@ var matLock = {
 		return this.timerStatus = 0;
 		//return this.timerStatus;
 	},
+	resumeTimer: function(int) {
+		this.currentTime = typeof int !== 'undefined' ? int : this.currentTime;
+		this.setTimer(this.currentTime);
+		this.startTimer();
+	},
+	setTimer: function(int) {
+		if(this.logging == 1) {
+		console.log('Timer value was manually set to ' + int);
+		}
+		return this.currentTime = int;
+	},
 	setUserStatus: function(s){
 		if(this.logging == 1) {
 		console.log('User status was set to ' + s);
@@ -59,112 +78,101 @@ var matLock = {
 	getUserStatus: function(){
 		return this.userStatus;
 	},
-	setCallback: function(c){
-		return this.callback = c;
-	},
-	getCallback: function(){
-		return this.callback;
-	},
 	toggleOutput: function(bool){
 		return this.logging = bool;
 	},
-	checkTimer: function(){
-		switch(this.currentTime){
-			case 2:
-			  this.request('security');
-			break;
-			case 3: 
-			  this.request('gatecheck');
-			break;
-			//Add additional runtime cases here
-			// case x:
-			//   this.request();
-			// break;
-			default:
-			if(this.logging == 1) {
-			console.log('Ping did not happen.');
-			}
-			  
-		}//end switch
+	buildTimeline: function(eventsArray) {
+	//constructs a dynamic 'case' statement based on the items
+	//in the event object.
+	//var evts = this.sortEvents(this.event);
+	var switchOut = ''; 
+	switchOut += 'switch(this.currentTime){';
+	for(var i = 0; i < eventsArray.length; i++) {
+		//contains the event Object - minus the callback
+		var thisEventObj = eventsArray[i];
+		switchOut += 'case ' + thisEventObj.value + ':';
+		switchOut += '(function(){ ';
+		switchOut += this.event[thisEventObj.key]['eventCallback'];
+		switchOut += '})();';
+		switchOut += 'break;'
+	}
+		//build default case
+		switchOut += 'default:';
+		switchOut += 'if(this.logging == 1) {';
+		switchOut += 'console.log("Ping.")';
+		switchOut += '}';
+	//end the switch
+	switchOut += '}';
+	//return to be eval'ed
+	return this.timeline = switchOut;
+	},
+	checkTimer: function(){	
+		eval(this.timeline);
 		if(this.logging == 1) {
 		console.log('time was checked, it is ' + this.currentTime);	
 		}
 		return this.currentTime;
 	},
-	request: function(type) {
-		xhr = (function($) {
-		  $.ajax({
-		    url: this.url,
-		    success: function(data){
-		   	//there are different types of requests in our polling mechanism.
-		   	//1. Security--Checks the global visitor object and finds out whether or not they're secured
-		   	//2. Gatecheck--This throws up a gate for the user to respond to. Timer stops while in session
-		   	if(matLock.logging == 1) {
-			console.log('ajax request sent');
+	sortEvents: function(obj) {
+		var eventList = [];
+		for(key in obj) {
+			if(obj.hasOwnProperty(key)) {
+				eventList.push({ 'key': key, 'value' : obj[key]['triggerOn'] });
 			}
-		   	
-		    	if(type == 'security'){
-		    		if(matLock.logging == 1) {
-					console.log('This is a security check.');
-					}
-		    	
-		    		//this is a security check, find out if they're secured/unsecured
-		    		if(matLock.logging == 1) {
-					console.log('Checking the status of the user...');
-					}
-		    		
-     				if(Drupal.settings.content_gating.visitor == 'unsecured') {
-	   					// check the polling application and show them the gate if their status is 'unsecured'
-	   					if(matLock.logging == 1) {
-						console.log('User is ' + Drupal.settings.content_gating.visitor);
-						}	
-	   					matLock.setUserStatus("unsecured");
-     				} else {
-		     			// the visitor's identity is secured, meaning we know either their uid or elqCookie
-		     			// don't do anything...
-		     			if(matLock.logging == 1) {
-						console.log('User is ' + Drupal.settings.content_gating.visitor);
-						}			
-		     			matLock.setUserStatus("secured");
-     				}
-		    	}//end if type == 'security'
-		  	  if(type == 'gatecheck'){
-		  	  	if(matLock.logging == 1) {
-				console.log('This is a gate check.');
-				}
-		    	
-		    		//this is a security check, find out if they're secured/unsecured
-		    		if(matLock.logging == 1) {
-					console.log('This event will simulate a user having to fill out a form to proceed.');
-					}
-		    		
-     				if(matLock.getUserStatus() == "unsecured"){
-     				  $.colorbox({
-          				href: matLock.getCallback(),
-          				closeButton:true, //removes the colorbox close button
-          				escKey:true,	   //prevents close on 'Esc' key
-          				overlayClose:true,//prevents close from clicking on BG overlay
-          				maxWidth: "500px",
-          				maxHeight: "650px",
-          				onLoad: function(){
-          					//$('#cboxClose').hide(); //ensure the close button hides on load
-          				}
-        			  });
-        			  matLock.stopTimer();
-     				}
-		      }//end if type == 'gatecheck'
-		    },
-		    complete: function(data){
-		    	if(matLock.logging == 1) {
-				 console.log('ajax request complete');
-				}
-		    }
-		  });
-		})(jQuery);
+		}
+		eventList.sort( function(a, b) {
+			return a.value - b.value;
+		});
+		return eventList;
 	},
-	init: function(c) {
-		//c: callback url to webform (or any other) action, triggered by Drupal configuration form.
+	request: function(type,url,data) {
+		var xhr = new XMLHttpRequest();
+		xhr.open(type,url);
+		if(typeof data === 'undefined' || data === null) {
+		xhr.send(null);	
+		} else {
+		xhr.send(data);
+		}
+		xhr.onreadystatechange = function(){
+			if(xhr.readyState === 4){
+				if(xhr.status === 200) {
+					console.log(xhr.responseText);
+					return xhr.responseText;
+				} else {
+					console.log('Error: ' + xhr.status);
+				}
+			}
+		}
+	},
+	bakeCookie: function() {
+		var name = "matlock";
+		var value = { url: this.url, currentTime: this.currentTime, status: this.timerStatus };
+		var cookie = name + '=' + JSON.stringify(value);
+		document.cookie = cookie;
+		console.log('Data saved to document.cookie!');
+	},
+	readCookie: function(cookie) {
+		//cookie = typeof document.cookie !== 'undefined' ? document.cookie;
+	},
+	listenOutbound: function() {
+		console.log('matlock is listening for outbound requests...');
+		window.addEventListener('beforeunload', function (e) {
+			console.log('User is leaving the web page...');
+			this.request('POST','/',{url: this.url, totaltime: this.currentTime});
+		});
+	},
+	init: function() {
+		//start it up
 		this.startTimer();
-		return this.callback = this.setCallback(c);
+		//watch for exits.
+		this.listenOutbound();
+		//some test events...
+		//this.event.hidelogo = {eventCallback: '(function($){$("p.digium-logo").hide();})(jQuery);',triggerOn: 15};
+		//this.event.explodefonts = {eventCallback: '(function($){$("body").css({"font-size":"300%"})})(jQuery);',triggerOn: 10};
+		//this.event.sayhi = { eventCallback: 'alert("Just wanted to say HI!");', triggerOn: 65 };
+		//this.event.editable = { eventCallback: 'javascript:document.body.contentEditable="true"; document.designMode="on"; alert("content is now editable!");', triggerOn: 75 };
+		var evts = this.sortEvents(this.event);
+		this.buildTimeline(evts);
 	}
 };
+var m = matlock.init();
