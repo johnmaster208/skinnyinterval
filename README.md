@@ -1,4 +1,3 @@
-matlock
 # matlock
 
 **matlock** is a multi-purpose worker application written entirely in JavaScript. I wrote it after being dissatisfied with having to load all manner of libraries, modules and packages just to build smart real-time apps in node.  **matlock** counts the time, then does things on time. It's also *tiny* (Under 3kb).
