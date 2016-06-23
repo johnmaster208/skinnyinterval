@@ -1,11 +1,11 @@
 /*
-* agent.js
-* description: customs polling script which builds profile info for unknown visitors.
+* skinnyinterval.js
+* description: tiny worker script. Functions entirely off setInterval calls.
 * author: John Richardson
 *
 */
 
-var matlock = {
+var SI = {
 
 	url: window.location.href, // url: stores the content URL
 	timerStatus: 0,			   // timerStatus: on/off switch for the timer (1 == On, 0 == Off)
@@ -145,7 +145,7 @@ var matlock = {
 		}
 	},
 	bakeCookie: function() {
-		var name = "matlock";
+		var name = "SI";
 		var value = { url: this.url, currentTime: this.currentTime, status: this.timerStatus };
 		var cookie = name + '=' + JSON.stringify(value);
 		document.cookie = cookie;
@@ -155,7 +155,7 @@ var matlock = {
 		//cookie = typeof document.cookie !== 'undefined' ? document.cookie;
 	},
 	listenOutbound: function() {
-		console.log('matlock is listening for outbound requests...');
+		console.log('SI is listening for outbound requests...');
 		window.addEventListener('beforeunload', function (e) {
 			console.log('User is leaving the web page...');
 			this.request('POST','/',{url: this.url, totaltime: this.currentTime});
@@ -175,4 +175,4 @@ var matlock = {
 		this.buildTimeline(evts);
 	}
 };
-var m = matlock.init();
+var m = SI.init();
