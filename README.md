@@ -6,7 +6,16 @@
 
 Not exactly. It doesn't report GMT. It does understand duration (how long since?) and expiration (how long until?) For most real-time applications, this may be all you'll ever need to provide to your users. Skinny Interval executes on a setInterval loop. It's called on DOM load and then restarts on the next page load. It just counts, and does things. The **event** API allows you to build state into your applications, but otherwise its purpose is concise--count and then execute stuff when you want it to.
 
+## Advantages ##
 
+- Doesn't require node (or any other dependencies).
+- Runs in any browser on the planet, as long as JavaScript is supported.
+- It's fast and small. 
+
+## Disadvantages ##
+
+- It's pretty dumb.
+- The only 'back-office' is a single setInterval() loop.
 
 ## What can I do with it?
 

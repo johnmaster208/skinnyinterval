@@ -98,7 +98,7 @@ var SI = {
 	for(var i = 0; i < eventsArray.length; i++) {
 		//contains the event Object - minus the callback
 		var thisEventObj = eventsArray[i];
-		console.log(thisEventObj);
+		//console.log(thisEventObj);
 		switchOut += 'case ' + thisEventObj.value + ':';
 		switchOut += '(function(){ ';
 		switchOut += this.event[thisEventObj.key]['eventCallback'];
