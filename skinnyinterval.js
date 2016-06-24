@@ -18,6 +18,12 @@ var SI = {
 	timeline: '',			   // based on what's in the event obj, a dynamic casing statement that includes timing/execution of scripts on the page load.
 	hashid: null,
 
+	// TODO: 
+	// EventList(): public method to see the events loaded on the current timeline
+	// triggerEvery: handler for event callbacks; need to find a way to push repeating events to the timeline (w/o having to re-init)
+	// timeUntil(Event): shows seconds until X event triggers on the timeline (based on currentTime)
+	// timeUntilNext(): shows seconds until next event on the timeline (based on currentTime)
+
 	startTimer: function(){
 		this.timerStatus = 1;
 		if(this.logging == 1) {
@@ -79,6 +85,8 @@ var SI = {
 		return this.userStatus;
 	},
 	toggleOutput: function(bool){
+		var str = (bool === 1) ? 'true' : 'false';
+		console.log("Logging has been set to " + str);
 		return this.logging = bool;
 	},
 	buildTimeline: function(eventsArray) {
@@ -90,6 +98,7 @@ var SI = {
 	for(var i = 0; i < eventsArray.length; i++) {
 		//contains the event Object - minus the callback
 		var thisEventObj = eventsArray[i];
+		console.log(thisEventObj);
 		switchOut += 'case ' + thisEventObj.value + ':';
 		switchOut += '(function(){ ';
 		switchOut += this.event[thisEventObj.key]['eventCallback'];
@@ -108,9 +117,9 @@ var SI = {
 	},
 	checkTimer: function(){	
 		eval(this.timeline);
-		if(this.logging == 1) {
-		console.log('time was checked, it is ' + this.currentTime);	
-		}
+		//if(this.logging == 1) {
+		//console.log('time was checked, it is ' + this.currentTime);	
+		//}
 		return this.currentTime;
 	},
 	sortEvents: function(obj) {
@@ -171,6 +180,12 @@ var SI = {
 		//this.event.explodefonts = {eventCallback: '(function($){$("body").css({"font-size":"300%"})})(jQuery);',triggerOn: 10};
 		//this.event.sayhi = { eventCallback: 'alert("Just wanted to say HI!");', triggerOn: 65 };
 		//this.event.editable = { eventCallback: 'javascript:document.body.contentEditable="true"; document.designMode="on"; alert("content is now editable!");', triggerOn: 75 };
+		this.toggleOutput(1);
+		this.event.welcome = {eventCallback: 'console.log("Welcome to Skinnyinterval! This is a tiny script that does things for you (even when you forget it is there!)");',triggerOn: 10};
+		this.event.welcome2 = {eventCallback: 'console.log("Notice there is a ping message every second?");',triggerOn: 15};
+		this.event.welcome3 = {eventCallback: 'console.log("You can toggle this message on/off from the console by using its own public method, toggleOutput().");',triggerOn: 20};
+		this.event.welcome4 = {eventCallback: 'console.log("Try using %cSI.toggleOutput(0);","color: blue; font-size:large;");',triggerOn: 25};
+		this.event.welcome5 = {eventCallback: '(SI.logging === 0) ? console.log("See how easy that was? Skinnyinterval is excellent at counting, but not so good at keeping the actual time.") : console.log("^Try using the above command.") ;',triggerOn:40};
 		var evts = this.sortEvents(this.event);
 		this.buildTimeline(evts);
 	}
